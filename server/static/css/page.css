@@ -1,0 +1,100 @@
+/* montserrat-regular - latin */
+@font-face {
+    font-display: swap;
+    /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Montserrat';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/static/fonts/montserrat-v25-latin-regular.eot');
+    /* IE9 Compat Modes */
+    src: url('/static/fonts/montserrat-v25-latin-regular.eot?#iefix') format('embedded-opentype'),
+        /* IE6-IE8 */
+        url('/static/fonts/montserrat-v25-latin-regular.woff2') format('woff2'),
+        /* Super Modern Browsers */
+        url('/static/fonts/montserrat-v25-latin-regular.woff') format('woff'),
+        /* Modern Browsers */
+        url('/static/fonts/montserrat-v25-latin-regular.ttf') format('truetype'),
+        /* Safari, Android, iOS */
+        url('/static/fonts/montserrat-v25-latin-regular.svg#Montserrat') format('svg');
+    /* Legacy iOS */
+}
+.form-control {
+    margin: 5px;
+}
+
+.nav-link {
+    overflow: hidden;
+    border-radius: 5px;
+}
+
+a.active {
+    background-color: #ffc107;
+}
+
+.dropdown-item.active, .dropdown-item:active {
+    color: black;
+    background-color: #ffc107;
+}
+
+option:checked {
+    background-color: #ffc107;
+    color: black;
+}
+
+.form-select {
+    margin-left: 5px;
+}
+
+.svg-img {
+    width: 28px;
+    height: 28px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+form {
+    margin-bottom: 10px;
+}
+
+select {
+    margin-left: 5px;
+}
+
+.main-bg {
+    background-color: rgb(200, 200, 200);
+}
+
+div {
+    /* border: solid 1px black;*/ 
+    border: none;
+}
+
+.datatable-row {
+    border: solid thin  black;
+}
+
+.datatable-row-last {
+    overflow: hidden;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.datatable-header {
+    overflow: hidden;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.bg-even {
+    background-color: rgb(130, 130, 130);
+}
+
+.bg-odd {
+    background-color: rgb(160, 160, 160);
+}
+
+.form-label {
+    display: inline-block;
+    width: 100px;
+    margin: 5px, 5px;
+}

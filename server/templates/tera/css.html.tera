@@ -1,0 +1,4 @@
+<link href="/static/css/bootstrap.css" rel="stylesheet">
+<link href="/static/css/page.css" rel="stylesheet">
+
+<link rel="preload" href="/static/fonts/montserrat-v25-latin-regular.ttf" as="font" crossorigin>

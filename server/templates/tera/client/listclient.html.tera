@@ -1,0 +1,53 @@
+{% extends "tera/base.html.tera" %}
+{% block meta %}
+<meta name="objecttype" content="client">
+{% endblock meta %}
+
+{% block content %}
+<form method="post" action="/createorupdateclient" id="createorupdate-client-form">
+    <input type="hidden" name="id" id="clientidInput" value="{{input_id}}"/>
+    <div class="row form-group">
+        <div class="col-sm-4 align-self-center align-middle">
+            <input name="name" id="nameInput" class="form-control" placeholder="Client name" value="{{input_name}}" required>
+        </div>
+        <div class="col-sm-6 align-self-center align-middle">
+        </div>
+        <div class="col-sm-2 align-self-center align-middle">
+            <img src="/static/images/add-square-svgrepo-com.svg" alt="add" class="svg-img" id="createorupdate-client-button"
+                role="button">
+        </div>
+    </div>
+</form>
+<div class="row  bg-warning datatable-row datatable-header">
+    <div class="col-sm-11 align-self-center">
+        Name
+    </div>
+    <div class="col-sm-1 align-self-center">
+    </div>
+</div>
+{% if clients %}
+    {% for client in clients %}
+        {% if loop.index is even%}
+            {% if loop.last %}
+<div class="row bg-even datatable-row datatable-row-last">
+            {% else %}
+<div class="row bg-even datatable-row">
+            {% endif %}    
+        {% else %}
+            {% if loop.last %}
+<div class="row bg-odd datatable-row datatable-row-last">
+            {% else %}
+<div class="row bg-odd datatable-row">
+            {% endif %}    
+        {% endif %}
+        <div class="col-sm-11  align-self-center">
+            {{client.name}}
+        </div>
+        <div class="col-sm-1  align-self-center">
+            <img src="/static/images/edit-pen-svgrepo-com.svg" alt="edit" class="svg-img edit-client-button" id="edit-client-button-{{ client.id }}" role="button">
+            <img src="/static/images/trash-svgrepo-com.svg" alt="delete" class="svg-img delete-client-button" id="delete-client-button-{{ client.id }}" role="button">
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+{% endblock content %}

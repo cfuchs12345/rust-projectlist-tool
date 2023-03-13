@@ -1,0 +1,13 @@
+[package]
+name = "form_entities"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "form_entities"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+entities ={ path = "../entities"}

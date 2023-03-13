@@ -1,0 +1,13 @@
+[package]
+name = "projectlisttool"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = ["httproutes", "entities", "services", "server", "migration", "form_entities", "pdf"]
+
+[dependencies]
+dotenvy = "0.15.6"
+env_logger = "0.10.0"
+server = {path = "server"}

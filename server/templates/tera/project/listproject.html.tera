@@ -1,0 +1,238 @@
+{% extends "tera/base.html.tera" %}
+{% block meta %}
+<meta name="objecttype" content="project">
+{% endblock meta %}
+
+{% block content %} 
+{% if message %}
+<div class="alert alert-success" role="alert">{{ message }}</div>
+{% endif%}
+{% if error %}
+<div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endif%}
+{% if warning %}
+<div class="alert alert-warning" role="alert">{{ warning }}</div>
+{% endif%}
+
+<form method="post" action="/createorupdateproject" id="createorupdate-project-form">
+    <input type="hidden" name="id" id="projectidInput" value="{{input_id}}" />
+    <input type="hidden" name="duration" id="durationInput" value="{{input_duration}}" />
+
+    <div class="row form-group">
+        <div class="col-sm-3 align-middle">
+            <input type="hidden" name="person_ids" />
+            <select class="btn-secondary btn btn-light dropdown-toggle" name="person_ids[]" id="personInput">
+                {% if persons %}
+                {% for person in persons %}
+                <option value="{{ person.id }}" {% if person.id in selected_persons %} selected="selected" {% endif %}>
+                    {{ person.name }}</option>
+                {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+        <div class="col-sm-4 align-middle">
+            <input type="hidden" name="client_ids" />
+            <select class="btn-secondary btn btn-light dropdown-toggle" name="client_ids[]" id="clientInput">
+                {{ selected_clients }}
+                {% if clients %}
+                {% for client in clients %}
+                <option value="{{ client.id }}" {% if client.id in selected_clients %} selected="selected" {% endif
+                    %}>{{ client.name }}</option>
+                {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+        <div class="col-sm-4 align-middle">
+            <input type="hidden" name="businessarea_ids" />
+            <select class="btn-secondary btn btn-light dropdown-toggle" name="businessarea_ids[]" id="businessareaInput">
+                {{ selected_businessareas }}
+                {% if businessareas %}
+                {% for businessarea in businessareas %}
+                <option value="{{ businessarea.id }}" {% if businessarea.id in selected_businessareas%} selected="selected" {% endif
+                    %}>{{ businessarea.name_de }}</option>
+                {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+        <div class="col-sm-3 align-middle">
+        </div>
+        <div class="col-sm-2 align-bottom">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12 align-middle">
+            <br>
+        </div>
+    </div>
+    <div class="row form-group align-items-end">
+        <div class="col-sm-7 align-middle">
+            <ul class="nav nav-tabs" id="projectsummaryTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="de-summary-tab" data-bs-toggle="tab"
+                        data-bs-target="#de-summary-tab-pane" type="button" role="tab"
+                        aria-controls="de-summary-tab-pane" aria-selected="true">DE</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="en-summary-tab" data-bs-toggle="tab"
+                        data-bs-target="#en-summary-tab-pane" type="button" role="tab"
+                        aria-controls="en-summary-tab-pane" aria-selected="false">EN</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="projectsummaryTabContent">
+                <div class="tab-pane fade show active" id="de-summary-tab-pane" role="tabpanel"
+                    aria-labelledby="de-summary-tab" tabindex="0">
+                    <div class="row">
+                        <div class="col">
+                            <input name="summary_de" id="summarydeInput" class="form-control" placeholder="Summary DE"
+                                value="{{input_summary_de}}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <textarea name="description_de" rows="10" id="descriptiondeInput" class="form-control"
+                                placeholder="Description DE">{{input_description_de}}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="en-summary-tab-pane" role="tabpanel" aria-labelledby="en-summary-tab"
+                    tabindex="0">
+                    <div class="row">
+                        <div class="col">
+                            <input name="summary_en" id="summaryenInput" class="form-control" placeholder="Summary EN"
+                                value="{{input_summary_en}}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <textarea name="description_en" rows="10" id="descriptionenInput" class="form-control"
+                                placeholder="Description EN">{{input_description_en}}</textarea>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3 align-bottom">
+            <div class="row">
+                <div class="col">
+                    <input name="from" id="fromInput" class="form-control" placeholder="from YYYY-MM"
+                        pattern="[0-9]{4}-[0-9]{2}" value="{{input_from}}">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <input name="to" id="toInput" class="form-control" placeholder="to YYYY-MM"
+                        pattern="[0-9]{4}-[0-9]{2}" value="{{input_to}}">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <input type="hidden" name="role_ids" />
+                    <select id="roleInput" class="form-select" multiple aria-label="multiple select example"
+                        name="role_ids[]">
+                        {% if roles %}
+                        {% for role in roles %}
+                        <option value="{{role.id}}" {% if role.id in selected_roles %} selected="selected" {% endif %}>
+                            {{role.name_de}}</option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <input type="hidden" name="technology_ids" />
+                    <select id="technologyInput" class="form-select" multiple aria-label="multiple select example"
+                        name="technology_ids[]">
+                        {% if technologies %}
+                        {% for technology in technologies %}
+                        <option value="{{technology.id}}" {% if technology.id in selected_technologies %}
+                            selected="selected" {% endif %}>{{technology.name}}</option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <img src="/static/images/add-square-svgrepo-com.svg" alt="createorupdate" class="svg-img" id="createorupdate-project-button" role="button">
+        </div>
+    </div>
+</form>
+
+<div class="row bg-warning datatable-row datatable-header">
+    <div class="col-sm-2 align-self-center">
+        Client
+    </div>
+    <div class="col-sm-2 align-self-center">
+        Person
+    </div>
+    <div class="col-sm-4 align-self-center">
+        Summary
+    </div>
+    <div class="col-sm-1 align-self-center">
+        From
+    </div>
+    <div class="col-sm-1 align-self-center">
+        To
+    </div>
+    <div class="col-sm-1 bg-warning align-self-center">
+        <img src="/static/images/pdf-svgrepo-com.svg" alt="generate pdf" class="svg-img" id="generate-pdf-button" role="button">
+        {% if send_activated %}
+        <img src="/static/images/send-svgrepo-com.svg" alt="send projectlist" class="svg-img" id="send-projectlist-button" role="button">
+        {% endif %}        
+    </div>
+</div>
+{% if projects %}
+{% for project in projects %}
+{% if loop.index is even%}
+{% if loop.last %}
+<div class="row bg-even datatable-row datatable-row-last">
+{% else %}
+<div class="row bg-even datatable-row">
+{% endif %}
+{% else %}
+{% if loop.last %}
+<div class="row bg-odd datatable-row datatable-row-last">
+{% else %}
+<div class="row bg-odd datatable-row">
+{% endif %}
+{% endif %}
+    <div class="col-sm-2 align-self-center">
+        {% if project.1 %}
+        {{project.1.0.name}}
+        {% endif %}
+    </div>
+    <div class="col-sm-2 align-self-center">
+        {% if project.4 %}
+        {{project.4.0.name}}
+        {% endif %}
+    </div>
+    <div class="col-sm-4 align-self-center">
+        {% if project.0 %}
+        {{project.0.summary_de}}
+        {% endif %}
+    </div>
+    <div class="col-sm-1  align-self-center">
+        {% if project.0 %}
+        {{project.0.from}}
+        {% endif %}
+    </div>
+    <div class="col-sm-1 align-self-center">
+        {% if project.0 %}
+        {{project.0.to}}
+        {% endif %}
+    </div>
+    <div class="col-sm-1 align-self-center">
+        {% if project.0 %}
+        <img src="/static/images/edit-pen-svgrepo-com.svg" alt="edit" class="svg-img edit-project-button"
+            id="edit-project-button-{{ project.0.id }}" role="button">
+        <img src="/static/images/trash-svgrepo-com.svg" alt="delete" class="svg-img delete-project-button"
+            id="delete-project-button-{{ project.0.id }}" role="button">
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock content %}

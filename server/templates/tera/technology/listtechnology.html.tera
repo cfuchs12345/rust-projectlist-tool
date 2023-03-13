@@ -1,0 +1,51 @@
+{% extends "tera/base.html.tera" %}
+{% block meta %}
+<meta name="objecttype" content="technology">
+{% endblock meta %}
+
+{% block content %}
+<form method="post" action="/createorupdatetechnology" id="createorupdate-technology-form">
+    <input type="hidden" name="id" id="technologyidInput" value="{{input_id}}"/>
+    <div class="row form-group">
+        <div class="col-sm-10 align-self-center align-middle">
+            <input name="name" id="nameInput" class="form-control" placeholder="Technology type" value="{{input_name}}" required>
+        </div>
+        <div class="col-sm-2 align-self-center align-middle">
+            <img src="/static/images/add-square-svgrepo-com.svg" alt="add" class="svg-img" id="createorupdate-technology-button"
+                role="button">
+        </div>
+    </div>
+</form>
+<div class="row bg-warning datatable-row datatable-header">
+    <div class="col-sm-11 align-self-center">
+        Type
+    </div>
+    <div class="col-sm-1 align-self-center">
+    </div>
+</div>
+{%if technologies %}
+    {% for technology in technologies %}
+        {% if loop.index is even%}
+            {% if loop.last %}
+<div class="row bg-even datatable-row datatable-row-last">
+            {% else %}
+<div class="row bg-even datatable-row">
+            {% endif %}
+        {% else %}
+            {% if loop.last %}
+<div class="row bg-odd datatable-row datatable-row-last">
+            {% else %}
+<div class="row bg-odd datatable-row">
+            {% endif %}
+        {% endif %}
+    <div class="col-sm-11  align-self-center">
+        {{technology.name}}
+    </div>
+    <div class="col-sm-1  align-self-center">
+        <img src="/static/images/edit-pen-svgrepo-com.svg" alt="edit" class="svg-img edit-technology-button" id="edit-technology-button-{{ technology.id }}" role="button">
+        <img src="/static/images/trash-svgrepo-com.svg" alt="delete" class="svg-img delete-technology-button" id="delete-technology-button-{{ technology.id }}" role="button">
+    </div>
+</div>
+    {% endfor %}
+{% endif %}
+{% endblock content %}

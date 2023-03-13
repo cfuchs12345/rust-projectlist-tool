@@ -1,0 +1,68 @@
+{% extends "tera/base.html.tera" %}
+{% block meta %}
+<meta name="objecttype" content="businessarea">
+{% endblock meta %}
+
+{% block content %}
+<form method="post" action="/createorupdatebusinessarea" id="createorupdate-businessarea-form">
+    <input type="hidden" name="id" id="businessareaidInput" value="{{input_id}}"/>
+    <div class="row form-group">
+        <div class="col-sm-10 align-self-center align-middle">
+            <ul class="nav nav-tabs" id="businessareanameTab" role="tablist">
+                <li class="nav-item" role="presentation">      
+                    <button class="nav-link active" id="de-name-tab" data-bs-toggle="tab" data-bs-target="#de-name-tab-pane" type="button" role="tab" aria-controls="de-name-tab-pane" aria-selected="true">DE</button>        
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="en-name-tab" data-bs-toggle="tab" data-bs-target="#en-name-tab-pane" type="button" role="tab" aria-controls="en-name-tab-pane" aria-selected="false">EN</button>                    
+                </li>
+            </ul>
+            <div class="tab-content" id="businessareanameTabContent">
+                <div class="tab-pane fade show active" id="de-name-tab-pane" role="tabpanel" aria-labelledby="de-name-tab" tabindex="0"><input name="name_de" id="namedeInput" class="form-control" placeholder="Business area name DE" value="{{input_name_de}}" required></div>
+                <div class="tab-pane fade" id="en-name-tab-pane" role="tabpanel" aria-labelledby="en-name-tab" tabindex="0"><input name="name_en" id="nameenInput" class="form-control" placeholder="Business area name EN" value="{{input_name_en}}" required></div>
+            </div>
+        </div>
+        <div class="col-sm-2 align-self-center align-middle">
+            <img src="/static/images/add-square-svgrepo-com.svg" alt="add" class="svg-img" id="createorupdate-businessarea-button"
+                role="button">
+        </div>
+    </div>
+</form>
+<div class="row bg-warning datatable-row datatable-header">
+    <div class="col-sm-5 align-self-center">
+        Name DE
+    </div>
+    <div class="col-sm-5 align-self-center">
+        Name EN
+    </div>
+    <div class="col-sm-1 align-self-center">
+    </div>
+</div>
+{% if business_areas %}
+    {% for business_area in business_areas %}
+        {% if loop.index is even%}
+            {% if loop.last %}
+<div class="row bg-even datatable-row datatable-row-last">
+            {% else %}
+<div class="row bg-even datatable-row">
+            {% endif %}    
+        {% else %}
+            {% if loop.last %}
+<div class="row bg-odd datatable-row datatable-row-last">
+            {% else %}
+<div class="row bg-odd datatable-row">
+            {% endif %}    
+        {% endif %}
+    <div class="col-sm-5  align-self-center">
+        {{business_area.name_de}}
+    </div>
+    <div class="col-sm-5  align-self-center">
+        {{business_area.name_en}}
+    </div>
+    <div class="col-sm-1  align-self-center">
+        <img src="/static/images/edit-pen-svgrepo-com.svg" alt="edit" class="svg-img edit-businessarea-button" id="edit-businessarea-button-{{ business_area.id }}" role="button">
+        <img src="/static/images/trash-svgrepo-com.svg" alt="delete" class="svg-img delete-businessarea-button" id="delete-businessarea-button-{{ business_area.id }}" role="button">
+    </div>
+</div>
+    {% endfor %}
+{% endif %}
+{% endblock content %}

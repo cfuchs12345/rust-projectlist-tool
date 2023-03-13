@@ -1,0 +1,6 @@
+{% extends "tera/base.html.tera" %}
+
+
+{% block content %}
+
+{% endblock content %}

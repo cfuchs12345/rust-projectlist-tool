@@ -1,0 +1,24 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "server"
+path = "src/lib.rs"
+
+[dependencies]
+log = "0.4.0"
+env_logger = "0.10.0"
+sea-orm = { version = "0.11.0", features = ["sqlx-sqlite", "runtime-actix-native-tls", "macros"]}
+sea-orm-migration = "0.11.0"
+actix-web = "4"
+actix-files = "0.6.2"
+tera = "1.17.1"
+sqlx = "0.6.2"
+httproutes ={ path = "../httproutes"}
+entities ={ path = "../entities"}
+migration ={ path = "../migration"}
+pdf ={ path = "../pdf"}
+

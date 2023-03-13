@@ -1,0 +1,27 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% block meta %}
+    {% endblock meta %}
+
+    {% include "tera/css.html.tera" %}
+
+    <title>Project list tool</title>
+</head>
+
+<body class="main-bg">
+    {% include "tera/navigation.html.tera" %}
+
+    <div class="container-sm" id="main-content">
+    {% block content %}
+    {% endblock content %}
+    </div>
+
+    {% include "tera/scripts.html.tera" %}
+</body>
+
+</html>
