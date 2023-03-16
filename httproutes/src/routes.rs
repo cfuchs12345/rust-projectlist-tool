@@ -88,7 +88,7 @@ pub(crate) async fn push_projectlist_to_receiver(data: web::Data<AppData>)  -> R
                     .await;
                 
                 match response {
-                    Ok(resp) => {                
+                    Ok(resp) => {
                         match resp.status() {
                             StatusCode::OK => ctx.insert("message", "Successfully pushed projectlist to configured target service"),
                             StatusCode::UNAUTHORIZED => ctx.insert("error", "Authentication failed. API key invalid"),
