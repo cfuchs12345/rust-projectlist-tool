@@ -1,17 +1,14 @@
-use lazy_static::{lazy_static};
+use entities::project::ProjectTuple;
+use lazy_static::lazy_static;
 use regex::Regex;
 use genpdf::elements::{LinearLayout, Paragraph, TableLayout, Break, Image};
 use genpdf::{Alignment, Element, Scale};
 use genpdf::{elements, style};
 use config::Config;
 
+const IMAGE_PATH_JPG: &str = "server/static/images/logo.jpg";
 
-
-use entities::{project::Model as Project, client::Model as Client, role::Model as Role, person::Model as Person, technology::Model as Technology, businessarea::Model as Businessarea};
-
-const IMAGE_PATH_JPG: &'static str = "server/static/images/logo.jpg";
-
-pub fn generate_pdf(config: &Config, project_list: Vec<(Project, Vec<Client>, Vec<Businessarea>, Vec<Role>, Vec<Person>, Vec<Technology>)>, target_file_name: String, language: &str) -> Result<(), genpdf::error::Error> {
+pub fn generate_pdf(config: &Config, project_list: Vec<ProjectTuple>, target_file_name: String, language: &str) -> Result<(), genpdf::error::Error> {
     let font_dir = "./pdf/fonts";
     let font_roboto_str = "Roboto";
 
@@ -29,8 +26,8 @@ pub fn generate_pdf(config: &Config, project_list: Vec<(Project, Vec<Client>, Ve
         _ => None,
     };
 
-    get_env_vars_by_prefix(&config, "address_line_", language, &mut post_address_lines);
-    get_env_vars_by_prefix(&config, "web_and_phone_line_", language, &mut mailphone_lines);
+    get_env_vars_by_prefix(config, "address_line_", language, &mut post_address_lines);
+    get_env_vars_by_prefix(config, "web_and_phone_line_", language, &mut mailphone_lines);
        
     let font_family_roboto = genpdf::fonts::from_files(font_dir, font_roboto_str, None)
         .expect("Failed to load font family");
@@ -59,19 +56,19 @@ pub fn generate_pdf(config: &Config, project_list: Vec<(Project, Vec<Client>, Ve
     doc.render_to_file(target_file_name)
 }
 
-fn render_projects(project_tuples: Vec<(Project, Vec<Client>, Vec<Businessarea>, Vec<Role>, Vec<Person>, Vec<Technology>)>, language: &str) -> Vec<TableLayout> {
+fn render_projects(project_tuples: Vec<ProjectTuple>, language: &str) -> Vec<TableLayout> {
     let mut list:Vec<TableLayout> = Vec::new();
 
     for project_tuple in project_tuples {    
         let project = project_tuple.0;
-        let clients = project_tuple.1.iter().next();
-        let businessareas = project_tuple.2.iter().next();
+        let clients = project_tuple.1.first();
+        let businessareas = project_tuple.2.first();
         let roles =  project_tuple.3;
-        let person =  project_tuple.4.iter().next();
+        let person =  project_tuple.4.first();
 
         let technologies =  project_tuple.5;
 
-        let roles_string = if roles.len() > 0 {           
+        let roles_string = if !roles.is_empty() {           
             let roles_as_strings:Vec<String> = roles.iter().map(|r| -> String {
                 match language {
                     "de" =>r.name_de.clone(),
@@ -88,7 +85,7 @@ fn render_projects(project_tuples: Vec<(Project, Vec<Client>, Vec<Businessarea>,
             String::from("")
         };       
 
-        let tech_string = if technologies.len() > 0 {
+        let tech_string = if !technologies.is_empty() {
             let technologies_as_strings:Vec<String> = technologies.iter().map(|t| -> String {t.name.clone()}).collect();
             match language {
                 "de" => format!("Technologien: {}", technologies_as_strings.join(", ")),
@@ -135,16 +132,16 @@ fn render_projects(project_tuples: Vec<(Project, Vec<Client>, Vec<Businessarea>,
 
 
 
-        let iter = description.split("\n").into_iter();
+        let iter = description.split('\n'); 
 
 
         let style_small = style::Style::new().with_font_size(10);
-        let mut style_small_grey = style_small.clone();
+        let mut style_small_grey = style_small;
         style_small_grey.set_color(style::Color::Greyscale(100));
 
         let style_normal = style::Style::new().with_font_size(12);
-        let style_normal_bold = style_normal.clone().bold();
-        let mut style_normal_bold_grey = style_normal_bold.clone();
+        let style_normal_bold = style_normal.bold();
+        let mut style_normal_bold_grey = style_normal_bold;
         style_normal_bold_grey.set_color(style::Color::Greyscale(100));
 
         
@@ -192,33 +189,34 @@ fn add_header(
 
     let post_address_paragraphs: Vec<elements::Paragraph> = post_address_lines
         .iter()
-        .map(move |line| elements::Paragraph::new(line))
+        .map(elements::Paragraph::new)
         .collect();
 
     let mailphone_paragraphs: Vec<elements::Paragraph> = mailphone_lines
         .iter()
-        .map(move |line| elements::Paragraph::new(line))
+        .map(elements::Paragraph::new)
         .collect();
 
 
     decorator.set_header(move |_page| {
-        let image = Image::from_path(IMAGE_PATH_JPG);
+        let image_result = Image::from_path(IMAGE_PATH_JPG);
 
         let mut logo_layout = LinearLayout::vertical();
-        if image.is_ok() {
-            let mut logo = image.expect("logo not found"); // safe here - checked with is_ok before
-            log::info!("scale is {:?}", logo_scale);
 
-            if logo_scale.is_some()  {
-                let scale = logo_scale.expect("problem while getting scale"); // unwrap is safe here - checked with is_some before
-                logo.set_scale(Scale::new(scale, scale));
+        match image_result {
+            Ok(mut image) => {
+                
+                log::info!("scale is {:?}", logo_scale);
+    
+                if  let Some(scale) = logo_scale {image.set_scale(Scale::new(scale, scale))};
+               
+                logo_layout.push(image); 
+            },
+            _e => {
+                // if image is not configured, we just don't show any
+                logo_layout.push(Break::new(1));
             }
-            
-            logo_layout.push(logo);            
         }
-        else {
-            logo_layout.push(Break::new(1));
-        };
 
         let mut post_address_layout = LinearLayout::vertical();
         post_address_layout.push(Break::new(1));
@@ -269,7 +267,7 @@ fn replace_special_chars(line: &str) -> String {
     REGEX.replace_all(line, " ").to_string()
 }
 
-fn get_env_vars_by_prefix<'a>( config: &Config, numbered_key_prefix: &str, language: &str, lines: &'a mut  Vec<String>) {
+fn get_env_vars_by_prefix( config: &Config, numbered_key_prefix: &str, language: &str, lines: &mut  Vec<String>) {
     for number in 0..4  {
         let key = format!("{}_{}{}", language, numbered_key_prefix,  number);
         let val = config.get_string(&key);

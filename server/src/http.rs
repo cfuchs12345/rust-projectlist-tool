@@ -19,7 +19,7 @@ pub async fn start() -> std::io::Result<()> {
 
     database::migrate(&conn).await;
      
-     let app_data_templates = match  Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*")) {
+     let templates = match  Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*")) {
         Ok(t) => t,
         Err(e) => {
             println!("Parsing error(s): {}", e);
@@ -27,7 +27,7 @@ pub async fn start() -> std::io::Result<()> {
         }
     };
 
-    let app_data = AppData { app_data_templates: app_data_templates, app_data_conn: conn, app_data_config: config };
+    let app_data = AppData { app_data_templates: templates, app_data_conn: conn, app_data_config: config };
 
     HttpServer::new(move || {
         App::new()
@@ -45,7 +45,7 @@ async fn fav_icon(_req: HttpRequest) -> Result<fs::NamedFile> {
     
     let path_found = fs::NamedFile::open("./server/static/images/favicon.ico");
     match path_found {
-        Ok(f) => return Ok(f),
+        Ok(f) => Ok(f),
         Err(e) => panic!("file not found {}", e)
     }
 }

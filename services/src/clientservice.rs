@@ -9,7 +9,7 @@ pub async fn get( client_id: i16,
     let clients = Client::find_by_id(client_id)
     .all(db).await?;
 
-    Ok(clients.iter().next().unwrap().clone())
+    Ok(clients.first().unwrap().clone())
 }
 
 
@@ -40,8 +40,7 @@ pub async fn save(db: &DbConn, client: ClientModel) -> Result<(String, i16), DbE
         else {
             let client = ClientActive {
                 id: Set(client_id.to_owned()),
-                name: Set(client.name.to_owned()),
-                ..Default::default()
+                name: Set(client.name.to_owned())
             };
 
             let result = Client::update(client).exec(db).await?;

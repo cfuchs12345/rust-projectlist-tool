@@ -7,7 +7,7 @@ pub async fn get( role_id: i16,
 ) ->  Result<RoleModel, DbErr> {
     let roles = Role::find_by_id(role_id).all(db).await?;
 
-    Ok(roles.iter().next().unwrap().clone())
+    Ok(roles.first().unwrap().clone())
 }
 
 pub async fn get_all(db: &DbConn) -> Result<Vec<RoleModel>, DbErr> {
@@ -32,8 +32,7 @@ pub async  fn save(db: &DbConn, role: RoleModel) -> Result<(String, i16), DbErr>
             let role = RoleActive {
                 id: Set(role_id.to_owned()),
                 name_de: Set(role.name_de.to_owned()),
-                name_en: Set(role.name_en.to_owned()),
-                ..Default::default()
+                name_en: Set(role.name_en.to_owned())
             };
 
             Role::update(role).exec(db).await?;

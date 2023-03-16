@@ -93,7 +93,7 @@ pub(crate) async fn push_projectlist_to_receiver(data: web::Data<AppData>)  -> R
                             StatusCode::OK => ctx.insert("message", "Successfully pushed projectlist to configured target service"),
                             StatusCode::UNAUTHORIZED => ctx.insert("error", "Authentication failed. API key invalid"),
                             StatusCode::INTERNAL_SERVER_ERROR => ctx.insert("error", "Target service produced an internal server errors while processing the data"),
-                            y => ctx.insert("error", &format!("Could not push projectlist to targetserver. Response status was {:?}", y).to_string())
+                            y => ctx.insert("error", &format!("Could not push projectlist to targetserver. Response status was {:?}", y))
                         }
                     },
                     _ => {
@@ -125,7 +125,7 @@ async fn list_projects_internal(data: web::Data<AppData>, selected_project_id: O
             let found_project_tuples = projectservice::get(project_id, &data.app_data_conn).await.unwrap_or_default();
             
             if found_project_tuples.len() == 1 {
-                match found_project_tuples.iter().next() {
+                match found_project_tuples.first() {
                     Some(project_tuple) => {
                         ctx.insert("input_id", &project_tuple.0.id);
 
@@ -188,10 +188,18 @@ async fn list_projects_internal(data: web::Data<AppData>, selected_project_id: O
     ctx.insert("projects", &projects); // needed for form input
     ctx.insert("technologies", &technologies); // needed for form input
 
-    let push_url = data.app_data_config.get_string("projectlist_receiver_rest_service");
-    if push_url.is_ok() && push_url.unwrap().trim().len() > 0 {
-        ctx.insert("send_activated", &true);
-    }    
+    let push_url_optional = data.app_data_config.get_string("projectlist_receiver_rest_service");
+    match push_url_optional {
+        Ok(push_url) => {
+            if !push_url.is_empty() {
+                ctx.insert("send_activated", &true);
+            }
+        },
+        e => {
+            log::error!("Error while getting push url from config {:?}", e);
+        }
+    }
+
     
     let rendered = match data.app_data_templates.render("tera/project/listproject.html.tera", &ctx) {
         Ok(t) => t,
@@ -617,10 +625,10 @@ pub(crate) async fn delete_client(data: web::Data<AppData>,path: web::Path<i16>)
 
 
 fn split_query_string(string: &str) -> HashMap<&str, &str> {
-    if string.trim().len() == 0 || ! string.contains("=") {
+    if string.is_empty() || ! string.contains('=') {
         return HashMap::new();
     }
-    string.split(",").map(|s| s.split_at(s.find("=").unwrap())).map(|(key, val)| (key, &val[1..])).collect()
+    string.split(',').map(|s| s.split_at(s.find('=').unwrap())).map(|(key, val)| (key, &val[1..])).collect()
 }
 
 fn handle_error(e: tera::Error ) -> String {

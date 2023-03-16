@@ -7,7 +7,7 @@ pub async fn get( technology_id: i16,
 ) ->  Result<TechnologyModel, DbErr> {
     let technologies = Technology::find_by_id(technology_id).all(db).await?;
 
-    Ok(technologies.iter().next().unwrap().clone())
+    Ok(technologies.first().unwrap().clone())
 }
 
 
@@ -31,8 +31,7 @@ pub async  fn save(db: &DbConn, technology: TechnologyModel) -> Result<(String, 
         else {
             let technology = TechnologyActive {
                 id: Set(technology_id.to_owned()),
-                name: Set(technology.name.to_owned()),
-                ..Default::default()
+                name: Set(technology.name.to_owned())                
             };
 
             Technology::update(technology).exec(db).await?;

@@ -20,7 +20,7 @@ pub async fn connect() -> Result<DatabaseConnection, DbErr> {
     con
 }
 
-fn create_db_file(db_url: &String) {
+fn create_db_file(db_url: &str) {
     let filename = db_url.strip_prefix("sqlite:").expect("invalid db url").strip_suffix("?mode=rwc").expect("invalid db url");
 
     let path = std::path::Path::new(&filename);

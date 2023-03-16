@@ -1,6 +1,6 @@
 use ::entities::project::Column;
-use entities::project::ProjectAndDependencies;
-use ::entities::project::{ActiveModel as ProjectActive, Entity as Project, Model as ProjectModel};
+use entities::project::{ProjectAndDependencies, ProjectTuple};
+use ::entities::project::{ActiveModel as ProjectActive, Entity as Project};
 use ::entities::project_client::{ActiveModel as ProjectClientActive, Entity as ProjectClient};
 use ::entities::project_businessarea::{ActiveModel as ProjectBusinessareaActive, Entity as ProjectBusinessarea};
 use ::entities::project_person::{ActiveModel as ProjectPersonActive, Entity as ProjectPerson};
@@ -8,11 +8,11 @@ use ::entities::project_role::{ActiveModel as ProjectRoleActive, Entity as Proje
 use ::entities::project_technology::{
     ActiveModel as ProjectTechnologyActive, Entity as ProjectTechnology,
 };
-use ::entities::client::{Entity as Client, Model as ClientModel};
-use ::entities::businessarea::{Entity as Businessarea, Model as BusinessareaModel};
-use ::entities::person::{Entity as Person, Model as PersonModel};
-use ::entities::role::{Entity as Role, Model as RoleModel};
-use ::entities::technology::{Entity as Technology, Model as TechnologyModel};
+use ::entities::client::{Entity as Client};
+use ::entities::businessarea::{Entity as Businessarea};
+use ::entities::person::{Entity as Person};
+use ::entities::role::{Entity as Role};
+use ::entities::technology::{Entity as Technology};
 use ::entities::{project_client, project_person, project_role, project_technology, project_businessarea};
 
 
@@ -23,14 +23,7 @@ pub async fn get(
     project_id: i16,
     db: &DbConn,
 ) -> Result<
-Vec<(
-    ProjectModel,
-    Vec<ClientModel>,
-    Vec<BusinessareaModel>,
-    Vec<RoleModel>,
-    Vec<PersonModel>,
-    Vec<TechnologyModel>,
-)>,
+Vec<ProjectTuple>,
 DbErr,
 >{
     let projects = Project::find_by_id(project_id).all(db).await?;
@@ -67,21 +60,14 @@ DbErr,
         Ok(projects
             .iter()
             .map(
-                |p| -> (
-                    ProjectModel,
-                    Vec<ClientModel>,
-                    Vec<BusinessareaModel>,
-                    Vec<RoleModel>,
-                    Vec<PersonModel>,
-                    Vec<TechnologyModel>,
-                ) {
+                |p| -> ProjectTuple {
                     let clients = clients_it.next().unwrap().to_owned();
                     let businessareas = businessareas_it.next().unwrap().to_owned();
                     let roles = roles_it.next().unwrap().to_owned();
                     let persons = persons_it.next().unwrap().to_owned();
                     let technologies = technologies_it.next().unwrap().to_owned();
     
-                    (p.to_owned(), clients, businessareas, roles, persons, technologies)
+                    ProjectTuple(p.to_owned(), clients, businessareas, roles, persons, technologies)
                 },
             )
             .collect())
@@ -90,14 +76,7 @@ DbErr,
 pub async fn get_all(
     db: &DbConn,
 ) -> Result<
-    Vec<(
-        ProjectModel,
-        Vec<ClientModel>,
-        Vec<BusinessareaModel>,
-        Vec<RoleModel>,
-        Vec<PersonModel>,
-        Vec<TechnologyModel>,
-    )>,
+    Vec<ProjectTuple>,
     DbErr,
 > {
     let projects = Project::find()
@@ -138,21 +117,14 @@ pub async fn get_all(
     Ok(projects
         .iter()
         .map(
-            |p| -> (
-                ProjectModel,
-                Vec<ClientModel>,
-                Vec<BusinessareaModel>,
-                Vec<RoleModel>,
-                Vec<PersonModel>,
-                Vec<TechnologyModel>,
-            ) {
+            |p| -> ProjectTuple {
                 let clients = clients_it.next().unwrap().to_owned();
                 let businessareas = businessareas_it.next().unwrap().to_owned();
                 let roles = roles_it.next().unwrap().to_owned();
                 let persons = persons_it.next().unwrap().to_owned();
                 let technologies = technologies_it.next().unwrap().to_owned();
 
-                (p.to_owned(), clients, businessareas, roles, persons, technologies)
+                ProjectTuple(p.to_owned(), clients, businessareas, roles, persons, technologies)
             },
         )
         .collect())
@@ -195,8 +167,7 @@ pub async fn save(db: &DbConn, project_and_dependencies: ProjectAndDependencies)
                 summary_en: Set(project_and_dependencies.project.summary_en.to_owned()),
                 duration: Set(project_and_dependencies.project.duration.to_owned()),
                 from: Set(project_and_dependencies.project.from.to_owned()),
-                to: Set(project_and_dependencies.project.to.to_owned()),
-                ..Default::default()
+                to: Set(project_and_dependencies.project.to.to_owned())
             };
 
             let result = Project::update(project).exec(db).await?;
@@ -213,26 +184,23 @@ pub async fn save(db: &DbConn, project_and_dependencies: ProjectAndDependencies)
     let mut project_persons: Vec<ProjectPersonActive> = Vec::new();
     let mut project_technologies: Vec<ProjectTechnologyActive> = Vec::new();
 
-    if client_ids.len() > 0 {
+    if !client_ids.is_empty() {
         let project_client = ProjectClientActive {
             project_id: Set(saved_project_id),
-            client_id: Set(client_ids.get(0).unwrap_or(&0).to_owned()),
+            client_id: Set(client_ids.first().unwrap_or(&0).to_owned()),
         };
         ProjectClient::insert(project_client).exec(db).await?;
     }
 
-    if businessarea_ids.len() > 0 {
+    if !businessarea_ids.is_empty() {
         let project_businessarea = ProjectBusinessareaActive {
             project_id: Set(saved_project_id),
-            businessarea_id: Set(businessarea_ids.get(0).unwrap_or(&0).to_owned()),
+            businessarea_id: Set(businessarea_ids.first().unwrap_or(&0).to_owned()),
         };
         ProjectBusinessarea::insert(project_businessarea).exec(db).await?;
     }
 
-
-
-
-    if role_ids.len() > 0 {
+    if !role_ids.is_empty() {
         role_ids
             .iter()
             .map(|role_id| {
@@ -247,7 +215,7 @@ pub async fn save(db: &DbConn, project_and_dependencies: ProjectAndDependencies)
         ProjectRole::insert_many(project_roles).exec(db).await?;
     }
 
-    if person_ids.len() > 0 {
+    if !person_ids.is_empty() {
         person_ids
             .iter()
             .map(|person_id| {
@@ -262,7 +230,7 @@ pub async fn save(db: &DbConn, project_and_dependencies: ProjectAndDependencies)
         ProjectPerson::insert_many(project_persons).exec(db).await?;
     }
 
-    if technology_ids.len() > 0 {
+    if !technology_ids.is_empty() {
         technology_ids
             .iter()
             .map(|technology_id| {

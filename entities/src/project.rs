@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sea_orm::entity::prelude::*;
 
-use crate::common;
+use crate ::{common, person, businessarea, client, role, technology};
 
 
 #[derive(Clone, Hash, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize, Default)]
@@ -25,6 +25,15 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub to: String
 }
+
+#[derive(Default, Hash, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub struct ProjectTuple (
+    pub Model, 
+    pub Vec<client::Model>, 
+    pub Vec<businessarea::Model>,
+    pub Vec<role::Model>,
+    pub Vec<person::Model>, 
+    pub Vec<technology::Model>);
 
 
 #[derive(Default, Hash, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]

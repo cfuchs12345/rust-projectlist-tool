@@ -48,11 +48,11 @@ impl ProjectWithRelatedEntites {
 }
 
 fn split_to_int(id_list: String) -> Vec<i16> {
-    if id_list.trim().len() == 0 {
+    if id_list.is_empty() {
         return Vec::new();
     }
     id_list
-        .split(",")
+        .split(',')
         .map(|s| -> i16 { s.trim().parse().unwrap_or_default()})
         .collect()
 }

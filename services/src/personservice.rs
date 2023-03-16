@@ -8,7 +8,7 @@ pub async fn get( persion_id: i16,
 ) ->  Result<PersonModel, DbErr> {
     let persons = Person::find_by_id(persion_id).all(db).await?;
 
-    Ok(persons.iter().next().unwrap().clone())
+    Ok(persons.first().unwrap().clone())
 }
 
 pub async fn get_all(db: &DbConn) -> Result<Vec<PersonModel>, DbErr> {
@@ -31,8 +31,7 @@ pub async  fn save(db: &DbConn, person: PersonModel) -> Result<(String, i16), Db
         else {
             let person = PersonActive {
                 id: Set(person_id.to_owned()),
-                name: Set(person.name.to_owned()),
-                ..Default::default()
+                name: Set(person.name.to_owned())
             };
 
             Person::update(person).exec(db).await?;

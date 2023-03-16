@@ -8,7 +8,7 @@ pub async fn get( businessarea_id: i16,
 ) ->  Result<BusinessAreaModel, DbErr> {
     let businessareas = BusinessArea::find_by_id(businessarea_id).all(db).await?;
 
-    Ok(businessareas.iter().next().unwrap().clone())
+    Ok(businessareas.first().unwrap().clone())
 }
 
 pub async fn get_all(db: &DbConn) -> Result<Vec<BusinessAreaModel>, DbErr>  {
@@ -33,8 +33,7 @@ pub async  fn save(db: &DbConn, businessarea: BusinessAreaModel) -> Result<(Stri
             let businessarea = BusinessAreaActive {
                 id: Set(businessarea_id.to_owned()),
                 name_de: Set(businessarea.name_de.to_owned()),
-                name_en: Set(businessarea.name_en.to_owned()),
-                ..Default::default()
+                name_en: Set(businessarea.name_en.to_owned())
             };
 
             BusinessArea::update(businessarea).exec(db).await?;

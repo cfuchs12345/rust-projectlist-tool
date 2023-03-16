@@ -1,5 +1,3 @@
-use dotenvy;
-
 
 pub fn main() {
     dotenvy::dotenv().ok(); 
