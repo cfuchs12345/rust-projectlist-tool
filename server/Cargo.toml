@@ -21,4 +21,3 @@ httproutes ={ path = "../httproutes"}
 entities ={ path = "../entities"}
 migration ={ path = "../migration"}
 pdf ={ path = "../pdf"}
-

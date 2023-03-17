@@ -177,8 +177,9 @@
     <div class="col-sm-1 align-self-center">
         To
     </div>
-    <div class="col-sm-1 bg-warning align-self-center">
-        <img src="/static/images/pdf-svgrepo-com.svg" alt="generate pdf" class="svg-img" id="generate-pdf-button" role="button">
+    <div class="col-sm-2 bg-warning align-self-center">
+        <img src="/static/images/de_pdf-svgrepo-com.svg" alt="generate pdf" class="svg-img" id="generate-de_pdf-button" role="button">
+        <img src="/static/images/en_pdf-svgrepo-com.svg" alt="generate pdf" class="svg-img" id="generate-en_pdf-button" role="button">
         {% if send_activated %}
         <img src="/static/images/send-svgrepo-com.svg" alt="send projectlist" class="svg-img" id="send-projectlist-button" role="button">
         {% endif %}        

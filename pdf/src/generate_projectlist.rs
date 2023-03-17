@@ -1,28 +1,29 @@
+use std::fs;
+use std::path::Path;
+
 use config::Config;
 use entities::project::ProjectTuple;
-use genpdf::elements::{Break, Image, LinearLayout, Paragraph, TableLayout};
+use genpdf::elements::{Break, Image, LinearLayout, PageBreak, Paragraph};
 use genpdf::fonts::{FontData, FontFamily};
 use genpdf::{elements, style};
 use genpdf::{Alignment, Element, Scale};
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::time::Duration;
+
+
 
 const IMAGE_PATH_JPG: &str = "server/static/images/logo.jpg";
 
 pub fn generate_pdf(
     config: &Config,
     project_list: Vec<ProjectTuple>,
-    target_file_name: String,
+    target_file_name: &String,
     language: &str,
 ) -> Result<(), genpdf::error::Error> {
-    let font_dir = "./pdf/fonts";
-    let font_roboto_str = "Roboto";
-
-    let title = match language {
-        "de" => "Projektliste",
-        _ => "Project List",
-    };
-
+    let font = get_font(config);
+    let lines_per_page = get_lines_per_page(config);
+    let title = get_title(language);
     let mut post_address_lines: Vec<String> = Vec::new();
     let mut mailphone_lines: Vec<String> = Vec::new();
 
@@ -39,18 +40,22 @@ pub fn generate_pdf(
         &mut mailphone_lines,
     );
 
-    let font_family_roboto = genpdf::fonts::from_files(font_dir, font_roboto_str, None)
+    let font_family_roboto = genpdf::fonts::from_files("./pdf/fonts", font.as_str(), None)
         .expect("Failed to load font family");
 
     let document = generate_document(
         font_family_roboto,
         title.to_string(),
         project_list,
+        lines_per_page,
         language,
         post_address_lines,
         mailphone_lines,
         logo_scale,
     )?;
+
+   delete_file_with_delay(target_file_name.clone(), 30);
+
 
     document.render_to_file(target_file_name)
 }
@@ -59,17 +64,14 @@ fn generate_document(
     font_family: FontFamily<FontData>,
     title: String,
     project_list: Vec<ProjectTuple>,
+    lines_per_page: i64,
     language: &str,
     post_address_lines: Vec<String>,
     mailphone_lines: Vec<String>,
     logo_scale: Option<f64>,
 ) -> Result<genpdf::Document, genpdf::error::Error> {
-    
-    let projects_rendered = render_projects(project_list, language);
-
     let mut doc = genpdf::Document::new(font_family);
     doc.set_title(&title);
-    doc.push(elements::Break::new(1.5));
     doc.set_page_decorator(add_header(
         post_address_lines,
         mailphone_lines,
@@ -81,17 +83,21 @@ fn generate_document(
             .aligned(Alignment::Center)
             .styled(style::Style::new().bold().with_font_size(16)),
     );
+    doc.push(elements::Break::new(1.5));
 
-    // now add the project tables
-    for project_rendered in projects_rendered {
-        doc.push(project_rendered);
-    }
+    doc = render_projects(doc, project_list, lines_per_page, language);
 
     Ok(doc)
 }
 
-fn render_projects(project_tuples: Vec<ProjectTuple>, language: &str) -> Vec<TableLayout> {
-    let mut list: Vec<TableLayout> = Vec::new();
+fn render_projects(
+    mut doc: genpdf::Document,
+    project_tuples: Vec<ProjectTuple>,
+    lines_per_page: i64,
+    language: &str,
+) -> genpdf::Document {
+    let mut current_page_lines: i64 = 0;
+    let mut first_page = true;
 
     for project_tuple in project_tuples {
         let project = project_tuple.0;
@@ -160,7 +166,32 @@ fn render_projects(project_tuples: Vec<ProjectTuple>, language: &str) -> Vec<Tab
             _ => project.summary_en,
         };
 
-        let iter = description.split('\n');
+        let description_iterator = description.split('\n');
+
+        let current_table_line_coount = i64::try_from(description.matches('\n').count()).unwrap()
+            + i64::try_from(summary.matches('\n').count()).unwrap();
+        current_page_lines += current_table_line_coount;
+        let max_for_this_page = match first_page {
+            true => lines_per_page - 3, // due to title on first page
+            false => lines_per_page,
+        };
+
+        let force_page_break = if current_page_lines > max_for_this_page {
+            // move current table to new page and reset line count to current's table line count
+            log::info!(
+                "current_page_lines {}, lines_per_page {}",
+                current_page_lines,
+                lines_per_page
+            );
+            current_page_lines = current_table_line_coount;
+
+            if first_page {
+                first_page = false;
+            }
+            true
+        } else {
+            false
+        };
 
         let style_small = style::Style::new().with_font_size(10);
         let mut style_small_grey = style_small;
@@ -174,14 +205,24 @@ fn render_projects(project_tuples: Vec<ProjectTuple>, language: &str) -> Vec<Tab
         let mut table = elements::TableLayout::new(vec![1, 3]);
         table.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
 
-        let layout = iter.fold(elements::LinearLayout::vertical(), |layout, line| {
-            layout.element(elements::Paragraph::new(replace_special_chars(line)))
-        });
+        let layout = description_iterator
+            .fold(elements::LinearLayout::vertical(), |layout, line| {
+                layout.element(elements::Paragraph::new(replace_special_chars(line)))
+            });
+
+        let to_word = match language {
+            "de" => "bis",
+            _ => "to",
+        };
+        let for_word = match language {
+            "de" => "für",
+            _ => "for",
+        };
 
         table
             .row()
             .element(
-                elements::Paragraph::new(format!("{} bis {}", project.from, project.to))
+                elements::Paragraph::new(format!("{} {} {}", project.from, to_word, project.to))
                     .styled(style_normal_bold_grey)
                     .padded(1),
             )
@@ -195,7 +236,7 @@ fn render_projects(project_tuples: Vec<ProjectTuple>, language: &str) -> Vec<Tab
         table
             .row()
             .element(
-                elements::Paragraph::new(format!("für {} {}", client_name, roles_string))
+                elements::Paragraph::new(format!("{} {} {}", for_word, client_name, roles_string))
                     .styled(style_small_grey)
                     .padded(1),
             )
@@ -219,10 +260,14 @@ fn render_projects(project_tuples: Vec<ProjectTuple>, language: &str) -> Vec<Tab
             .push()
             .expect("");
 
-        list.push(table);
+        if force_page_break {
+            doc.push(PageBreak::new());
+        }
+
+        doc.push(table);
     }
 
-    list
+    doc
 }
 
 fn add_header(
@@ -252,8 +297,6 @@ fn add_header(
 
         match image_result {
             Ok(mut image) => {
-                log::info!("scale is {:?}", logo_scale);
-
                 if let Some(scale) = logo_scale {
                     image.set_scale(Scale::new(scale, scale))
                 };
@@ -309,12 +352,44 @@ fn add_header(
     decorator
 }
 
+fn get_title(language: &str) -> &str {
+    match language {
+        "de" => "Projektliste",
+        "en" => "Project List",
+        y => panic!("invalid language {}", y),
+    }
+}
+
 fn replace_special_chars(line: &str) -> String {
     lazy_static! {
         static ref REGEX: Regex = Regex::new(r"[\s]+").expect("invalid regex given"); // as the regex pattern doesn't change, it is safe here
     }
     // replaces white-space chars (tabs) with simple blanks
     REGEX.replace_all(line, " ").to_string()
+}
+
+fn get_lines_per_page(config: &Config) -> i64 {
+    let lines_per_page = match config.get_int("pdf_max_lines_per_page") {
+        Ok(number) => number,
+        _e => {
+            log::warn!(
+                "PDF_MAX_LINE_PER_PAGE per page not found in env file. Using default value 30"
+            );
+            30
+        }
+    };
+    lines_per_page
+}
+
+fn get_font(config: &Config) -> String {
+    let font_name = match config.get_string("pdf_font") {
+        Ok(font_name) => font_name,
+        _e => {
+            log::warn!("PDF_FONT_NAME not found in env file. Using default font Roboto");
+            "Roboto".to_string()
+        }
+    };
+    font_name
 }
 
 fn get_env_vars_by_prefix(
@@ -337,6 +412,31 @@ fn get_env_vars_by_prefix(
     }
 }
 
+fn delete_file_with_delay(file_to_delete: String, delay_in_seconds: u64) {
+    tokio::spawn(async move {
+        log::debug!("sleep for some time");
+        tokio::time::sleep(Duration::from_secs(delay_in_seconds)).await;
+        
+        log::debug!("now trying to delete the file");
+
+        let path = Path::new(file_to_delete.as_str());
+        if path.exists() && path.is_file() {
+            match fs::remove_file(&file_to_delete) {
+                Ok(_) => {
+                    log::info!("file {} deleted.", file_to_delete);
+                },
+                e => {
+                    log::error!(
+                        "Could not delete file {}. Error was {:?}",
+                        file_to_delete,
+                        e
+                    );
+                }
+            }
+        }
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -345,7 +445,7 @@ mod tests {
     fn test_replace_special_chars() {
         assert_eq!(
             "test with a tab - tab was here",
-            replace_special_chars("test with a tab     - tab was here"),
+            replace_special_chars("test with a tab  - tab was here"),
             "tabs should have been replaced with simple blanks"
         );
     }

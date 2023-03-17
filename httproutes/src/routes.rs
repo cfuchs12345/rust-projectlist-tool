@@ -13,6 +13,11 @@ use ::form_entities::entities::{ProjectFormInput};
 
 use crate::{appdata::AppData};
 
+struct FileNameAndHeaderValue(HeaderValue, &'static str);
+
+static  GERMAN_FILE_TUPLE:FileNameAndHeaderValue = FileNameAndHeaderValue(HeaderValue::from_static("attachment; filename='Projektliste.pdf'"), "Projektliste_");
+static  ENGLISH_FILE_TUPLE:FileNameAndHeaderValue = FileNameAndHeaderValue(HeaderValue::from_static("attachment; filename='Project_List.pdf'"), "Project_List_");
+
 #[get("/")]
 pub(crate) async fn index(_data: web::Data<AppData>, _req: HttpRequest) -> Result<HttpResponse, http::Error> {
     Ok(HttpResponse::Found()
@@ -36,19 +41,27 @@ pub async fn generate_pdf_projectlist(data: web::Data<AppData>, req: HttpRequest
     let projects = projectservice::get_all(&data.app_data_conn).await.expect("Could not load projects from database"); // vec of tuple with all project related information
     
     let file_name = match language {
-        "de" => generate_unique_filename("Projektliste_".to_string(), ".pdf".to_string()),
-        _ => generate_unique_filename("Project_List_".to_string(), ".pdf".to_string())
+        "de" => generate_unique_filename(GERMAN_FILE_TUPLE.1, ".pdf".to_string()),
+        "en" => generate_unique_filename(ENGLISH_FILE_TUPLE.1, ".pdf".to_string()),
+        y => panic!("invalid language {}", y)
     };
+    
+    let header_value = match language {
+        "de" => &GERMAN_FILE_TUPLE.0,
+        "en" => &ENGLISH_FILE_TUPLE.0,
+        y => panic!("invalid language {}", y)
+    };
+   
 
     let response = 
-    match pdf::generate_projectlist::generate_pdf(&data.app_data_config, projects, file_name.clone(), language) {
-        Ok(_r) => {
-            let file = actix_files::NamedFile::open_async(file_name).await.expect("PDF file could not be loaded");
+    match pdf::generate_projectlist::generate_pdf(&data.app_data_config, projects, &file_name, language) {
 
+        Ok(_r) => {
+            let file = actix_files::NamedFile::open_async(&file_name).await.expect("PDF file could not be loaded");
            
             let mut response = file.into_response(&req);
-            
-            response.headers_mut().insert(header::CONTENT_DISPOSITION, HeaderValue::from_static("attachment; filename='projectlist.pdf'"));
+
+            response.headers_mut().insert(header::CONTENT_DISPOSITION, header_value.to_owned());
 
             response
         }
@@ -640,7 +653,7 @@ fn split_query_string(string: &str) -> Option<HashMap<&str, &str>> {
     Some(string.split(',').map(|s| s.split_at(s.find('=').unwrap())).map(|(key, val)| (key, &val[1..])).collect())
 }
 
-fn generate_unique_filename(prefix: String, extension: String) -> String {
+fn generate_unique_filename(prefix: &str, extension: String) -> String {
     format!("{}{}{}", prefix,  Uuid::new_v4(), extension)
 }
 
@@ -671,7 +684,7 @@ mod tests {
 
         
         let regex = Regex::new(expected_pattern.as_str()).unwrap();
-        let generated_filename = generate_unique_filename(prefix.to_string(), ".pdf".to_string());
+        let generated_filename = generate_unique_filename(prefix, ".pdf".to_string());
         
 
 
