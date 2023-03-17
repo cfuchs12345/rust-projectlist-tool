@@ -23,6 +23,9 @@ services ={ path = "../services"}
 entities ={ path = "../entities"}
 form_entities = {path = "../form_entities"}
 
+[dev-dependencies]
+regex = "1.7.1"
+
 [dependencies.uuid]
 version = "1.3.0"
 features = [

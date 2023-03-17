@@ -9,7 +9,7 @@ use log;
 use uuid::Uuid;
 use ::entities::{businessarea::Model as BusinessArea, client::Model as Client, role::Model as Role, technology::Model as Technology, person::Model as Person, projectlist::ProjectList};
 use ::services::{businessareaservice, clientservice, roleservice, technologyservice, personservice, projectservice};
-use ::form_entities::entities::{ProjectWithRelatedEntites};
+use ::form_entities::entities::{ProjectFormInput};
 
 use crate::{appdata::AppData};
 
@@ -23,18 +23,27 @@ pub(crate) async fn index(_data: web::Data<AppData>, _req: HttpRequest) -> Resul
 #[get("/generate_pdf_projectlist")]
 pub async fn generate_pdf_projectlist(data: web::Data<AppData>, req: HttpRequest) -> HttpResponse  {
     let params = split_query_string(req.query_string());
-    let language = params.get("language").unwrap_or(&"de").to_owned();
+    let language = match params {
+        Some(map) => {
+            match map.get("language") {
+                Some(value) => value,
+                None => "en"
+            }
+        },
+        None => "en"
+    };
 
-    let projects = projectservice::get_all(&data.app_data_conn).await.unwrap_or_default(); // vec of tuple with all project related information
+    let projects = projectservice::get_all(&data.app_data_conn).await.expect("Could not load projects from database"); // vec of tuple with all project related information
     
-    let uuid = Uuid::new_v4();
-
-    let target_file_name = format!("project_list_{}.pdf", uuid);
+    let file_name = match language {
+        "de" => generate_unique_filename("Projektliste_".to_string(), ".pdf".to_string()),
+        _ => generate_unique_filename("Project_List_".to_string(), ".pdf".to_string())
+    };
 
     let response = 
-    match pdf::generate_projectlist::generate_pdf(&data.app_data_config, projects, target_file_name.clone(), language) {
+    match pdf::generate_projectlist::generate_pdf(&data.app_data_config, projects, file_name.clone(), language) {
         Ok(_r) => {
-            let file = actix_files::NamedFile::open_async(target_file_name).await.expect("PDF file could not be loaded");
+            let file = actix_files::NamedFile::open_async(file_name).await.expect("PDF file could not be loaded");
 
            
             let mut response = file.into_response(&req);
@@ -238,7 +247,7 @@ fn default_input_project( ctx: &mut Context)  {
 
 
 #[post("/createorupdateproject")]
-pub(crate) async fn createorupdate_project(data: web::Data<AppData>, form_data: web::Form<ProjectWithRelatedEntites>) -> Result<HttpResponse, http::Error>  {
+pub(crate) async fn createorupdate_project(data: web::Data<AppData>, form_data: web::Form<ProjectFormInput>) -> Result<HttpResponse, http::Error>  {
     projectservice::save(&data.app_data_conn, form_data.to_project_and_dependencies()).await.unwrap();
 
     Ok(HttpResponse::Found()
@@ -624,11 +633,15 @@ pub(crate) async fn delete_client(data: web::Data<AppData>,path: web::Path<i16>)
 
 
 
-fn split_query_string(string: &str) -> HashMap<&str, &str> {
+fn split_query_string(string: &str) -> Option<HashMap<&str, &str>> {
     if string.is_empty() || ! string.contains('=') {
-        return HashMap::new();
+        return None;
     }
-    string.split(',').map(|s| s.split_at(s.find('=').unwrap())).map(|(key, val)| (key, &val[1..])).collect()
+    Some(string.split(',').map(|s| s.split_at(s.find('=').unwrap())).map(|(key, val)| (key, &val[1..])).collect())
+}
+
+fn generate_unique_filename(prefix: String, extension: String) -> String {
+    format!("{}{}{}", prefix,  Uuid::new_v4(), extension)
 }
 
 fn handle_error(e: tera::Error ) -> String {
@@ -639,4 +652,44 @@ fn handle_error(e: tera::Error ) -> String {
         cause = e.source();
     }
     "could not render page".to_string()
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use regex::Regex;
+
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_generate_unique_filename() {
+        let prefix = "project_list_";
+        let uuid_regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+        let expected_pattern = "^".to_owned() + prefix + uuid_regex + ".pdf$";
+
+        
+        let regex = Regex::new(expected_pattern.as_str()).unwrap();
+        let generated_filename = generate_unique_filename(prefix.to_string(), ".pdf".to_string());
+        
+
+
+        assert!(regex.is_match(generated_filename.as_str()),"expected {:?}, was {:?}", expected_pattern, generated_filename );
+    }
+
+    #[test]
+    fn test_split_query_string() {      
+        let expected = Some(HashMap::from([
+            ("test", "foo"),
+        ]));
+        assert_eq!(expected, split_query_string("test=foo"));
+    }
+
+    #[test]
+    fn test_split_query_string_empty_query() {
+        let expected = None;
+
+        assert_eq!(expected, split_query_string("invalid"), "should return None since there is no equal char which could be used to split to normal key/value pairs");
+    }
 }
